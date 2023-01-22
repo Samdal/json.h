@@ -152,7 +152,7 @@ json_weak struct json_value_s *json_parse(const void *src, size_t src_size);
  * alloc_func_ptr is null then malloc is used. */
 json_weak struct json_value_s *
 json_parse_ex(const void *src, size_t src_size, size_t flags_bitset,
-              void *(*alloc_func_ptr)(void *, size_t), void *user_data,
+              void *(*alloc_func_ptr)(size_t),
               struct json_parse_result_s *result);
 
 /* Extracts a value and all the data that makes it up into a newly created
@@ -166,7 +166,7 @@ json_extract_value(const struct json_value_s *value);
  * encoding. If alloc_func_ptr is null then malloc is used. */
 json_weak struct json_value_s *
 json_extract_value_ex(const struct json_value_s *value,
-                      void *(*alloc_func_ptr)(void *, size_t), void *user_data);
+                      void *(*alloc_func_ptr)(size_t));
 
 /* Write out a minified JSON utf-8 string. This string is an encoding of the
  * minimal string characters required to still encode the same data.
@@ -175,6 +175,9 @@ json_extract_value_ex(const struct json_value_s *value,
  * parameter is optional as the utf-8 string is null terminated. */
 json_weak void *json_write_minified(const struct json_value_s *value,
                                     size_t *out_size);
+json_weak void *json_write_minified_ex(const struct json_value_s *value,
+                                       size_t *out_size,
+                                       void *(*alloc_func_ptr)(size_t));
 
 /* Write out a pretty JSON utf-8 string. This string is encoded such that the
  * resultant JSON is pretty in that it is easily human readable. The indent and
@@ -188,6 +191,9 @@ json_weak void *json_write_minified(const struct json_value_s *value,
 json_weak void *json_write_pretty(const struct json_value_s *value,
                                   const char *indent, const char *newline,
                                   size_t *out_size);
+json_weak void *json_write_pretty_ex(const struct json_value_s *value, const char *indent,
+                                     const char *newline, size_t *out_size,
+                                     void *(*alloc_func_ptr)(size_t));
 
 /* Reinterpret a JSON value as a string. Returns null is the value was not a
  * string. */
@@ -2049,8 +2055,8 @@ void json_parse_value(struct json_parse_state_s *state, int is_global_object,
 
 struct json_value_s *
 json_parse_ex(const void *src, size_t src_size, size_t flags_bitset,
-              void *(*alloc_func_ptr)(void *user_data, size_t size),
-              void *user_data, struct json_parse_result_s *result) {
+              void *(*alloc_func_ptr)(size_t size),
+              struct json_parse_result_s *result) {
   struct json_parse_state_s state;
   void *allocation;
   struct json_value_s *value;
@@ -2113,7 +2119,7 @@ json_parse_ex(const void *src, size_t src_size, size_t flags_bitset,
   if (json_null == alloc_func_ptr) {
     allocation = malloc(total_size);
   } else {
-    allocation = alloc_func_ptr(user_data, total_size);
+    allocation = alloc_func_ptr(total_size);
   }
 
   if (json_null == allocation) {
@@ -2391,9 +2397,7 @@ void json_extract_copy_value(struct json_extract_state_s *const state,
 }
 
 struct json_value_s *json_extract_value_ex(const struct json_value_s *value,
-                                           void *(*alloc_func_ptr)(void *,
-                                                                   size_t),
-                                           void *user_data) {
+                                           void *(*alloc_func_ptr)(size_t)) {
   void *allocation;
   struct json_extract_result_s result;
   struct json_extract_state_s state;
@@ -2410,7 +2414,7 @@ struct json_value_s *json_extract_value_ex(const struct json_value_s *value,
   if (json_null == alloc_func_ptr) {
     allocation = malloc(total_size);
   } else {
-    allocation = alloc_func_ptr(user_data, total_size);
+    allocation = alloc_func_ptr(total_size);
   }
 
   state.dom = (char *)allocation;
@@ -3040,6 +3044,11 @@ char *json_write_minified_value(const struct json_value_s *value, char *data) {
 }
 
 void *json_write_minified(const struct json_value_s *value, size_t *out_size) {
+  json-write_minified_ex(value, out_size, json_null)
+}
+
+void *json_write_minified_ex(const struct json_value_s *value, size_t *out_size,
+                             void *(*alloc_func_ptr)(size_t)) {
   size_t size = 0;
   char *data = json_null;
   char *data_end = json_null;
@@ -3055,7 +3064,11 @@ void *json_write_minified(const struct json_value_s *value, size_t *out_size) {
 
   size += 1; /* for the '\0' null terminating character. */
 
-  data = (char *)malloc(size);
+  if (json_null == alloc_func_ptr) {
+    data = malloc(size);
+  } else {
+    data = alloc_func_ptr(size);
+  }
 
   if (json_null == data) {
     /* malloc failed! */
@@ -3381,8 +3394,14 @@ char *json_write_pretty_value(const struct json_value_s *value, size_t depth,
   }
 }
 
-void *json_write_pretty(const struct json_value_s *value, const char *indent,
-                        const char *newline, size_t *out_size) {
+void *json_write_pretty(const struct json_value_s *value,
+                        const char *indent, const char *newline,
+                        size_t *out_size) {
+  json_write_pretty_ex(value, indent, newline, outsize, json_null);
+}
+
+void *json_write_pretty_ex(const struct json_value_s *value, const char *indent,
+                           const char *newline, size_t *out_size, void *(*alloc_func_ptr)(size_t)) {
   size_t size = 0;
   size_t indent_size = 0;
   size_t newline_size = 0;
@@ -3417,7 +3436,11 @@ void *json_write_pretty(const struct json_value_s *value, const char *indent,
 
   size += 1; /* for the '\0' null terminating character. */
 
-  data = (char *)malloc(size);
+  if (json_null == alloc_func_ptr) {
+    data = malloc(size);
+  } else {
+    data = alloc_func_ptr(size);
+  }
 
   if (json_null == data) {
     /* malloc failed! */
