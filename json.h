@@ -2166,8 +2166,7 @@ json_parse_ex(const void *src, size_t src_size, size_t flags_bitset,
 }
 
 struct json_value_s *json_parse(const void *src, size_t src_size) {
-  return json_parse_ex(src, src_size, json_parse_flags_default, json_null,
-                       json_null, json_null);
+  return json_parse_ex(src, src_size, json_parse_flags_default, json_null, json_null);
 }
 
 struct json_extract_result_s {
@@ -2176,7 +2175,7 @@ struct json_extract_result_s {
 };
 
 struct json_value_s *json_extract_value(const struct json_value_s *value) {
-  return json_extract_value_ex(value, json_null, json_null);
+  return json_extract_value_ex(value, json_null);
 }
 
 json_weak struct json_extract_result_s
@@ -3044,7 +3043,7 @@ char *json_write_minified_value(const struct json_value_s *value, char *data) {
 }
 
 void *json_write_minified(const struct json_value_s *value, size_t *out_size) {
-  json-write_minified_ex(value, out_size, json_null)
+  return json_write_minified_ex(value, out_size, json_null);
 }
 
 void *json_write_minified_ex(const struct json_value_s *value, size_t *out_size,
@@ -3397,7 +3396,7 @@ char *json_write_pretty_value(const struct json_value_s *value, size_t depth,
 void *json_write_pretty(const struct json_value_s *value,
                         const char *indent, const char *newline,
                         size_t *out_size) {
-  json_write_pretty_ex(value, indent, newline, outsize, json_null);
+  return json_write_pretty_ex(value, indent, newline, out_size, json_null);
 }
 
 void *json_write_pretty_ex(const struct json_value_s *value, const char *indent,
